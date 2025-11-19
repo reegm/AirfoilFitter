@@ -5,6 +5,7 @@ from gui.main_window import MainWindow
 from gui.controllers import MainController
 import multiprocessing # Add this import
 
+#main function
 def main() -> None:
     """Launch the Qt GUI application."""
     app = QApplication(sys.argv)
