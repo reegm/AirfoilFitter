@@ -1,3 +1,6 @@
+#This project is no longer maintained as I have lost access to my account after switching phones. VS Code is obviously still authenticated, but it looks like I will have to move the repo to a new account. 
+
+
 # Airfoil Fitter
 
 Airfoil Fitter is a Python-based utility for importing airfoil .dat files and exporting clean Bézier curves.  
