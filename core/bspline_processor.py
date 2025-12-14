@@ -22,6 +22,7 @@ class BSplineProcessor:
         self.upper_curve: interpolate.BSpline | None = None
         self.lower_curve: interpolate.BSpline | None = None
         self.degree: int = int(degree)
+        self.fitted_degree: int | None = None  # Stores the actual degree used during fitting (may differ from self.degree if single span mode was used)
         self.fitted: bool = False
         self.is_sharp_te: bool = False
         self.enforce_g2: bool = True
@@ -101,6 +102,8 @@ class BSplineProcessor:
             
             # Final cleanup and validation
             self._finalize_curves()
+            # Store the actual degree that was used for fitting (important for export)
+            self.fitted_degree = self.degree
             self.fitted = True
             self._validate_continuity()
             # Validate trailing edge tangents if they were used in fitting
@@ -653,6 +656,12 @@ class BSplineProcessor:
             thick_lower[:, 1] = thick_lower[:, 1] - half_thickness * f_lower
 
             # Refit using current number of control points, preserving G1 at LE
+            # Preserve the fitted_degree (may differ from self.degree if single span mode was used)
+            saved_fitted_degree = self.fitted_degree
+            saved_degree = self.degree
+            # Use fitted_degree if available (the actual degree used during fitting)
+            if saved_fitted_degree is not None:
+                self.degree = saved_fitted_degree
             num_control_points = int(self.upper_control_points.shape[0])
             self._fit_g1_independent(
                 thick_upper, thick_lower, num_control_points,
@@ -664,6 +673,10 @@ class BSplineProcessor:
             
             # Finalize and rebuild curves
             self._finalize_curves()
+            # Restore the original degree and fitted_degree
+            self.degree = saved_degree
+            if saved_fitted_degree is not None:
+                self.fitted_degree = saved_fitted_degree
             self.fitted = True
 
             print(f"[DEBUG] Applied trailing edge thickening (smooth, C2 blend): {te_thickness:.4f}")

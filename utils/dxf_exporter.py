@@ -56,10 +56,11 @@ def export_bspline_to_dxf(bspline_processor, chord_length_mm, logger_func):
         upper_knots_list = upper_knots.tolist()
         lower_knots_list = lower_knots.tolist()
         
-        # Get degree from the processor (set in config)
-        degree = bspline_processor.degree
+        # Get degree from the processor - use fitted_degree if available (actual degree used during fitting),
+        # otherwise fall back to degree (which may have been restored to config value)
+        degree = bspline_processor.fitted_degree if bspline_processor.fitted_degree is not None else bspline_processor.degree
         
-        logger_func(f"Creating NURBS curves: degree {degree} (from config)")
+        logger_func(f"Creating NURBS curves: degree {degree} ({'from fitted B-spline' if bspline_processor.fitted_degree is not None else 'from config'})")
         logger_func(f"  Upper knot vector: {len(upper_knots_list)} knots")
         logger_func(f"  Lower knot vector: {len(lower_knots_list)} knots")
         
