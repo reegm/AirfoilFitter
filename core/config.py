@@ -11,7 +11,7 @@ from __future__ import annotations
 DEBUG_WORKER_LOGGING: bool = True
 
 # B-spline settings
-DEFAULT_BSPLINE_DEGREE: int = 5  # Degree of B-spline curves (3-7 recommended for airfoils)
+DEFAULT_BSPLINE_DEGREE: int = 4  # Degree of B-spline curves (3-7 recommended for airfoils)
 
 # ---- Manufacturing / Export defaults -------------------------------------
 DEFAULT_CHORD_LENGTH_MM: float = 200.0

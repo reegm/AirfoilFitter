@@ -25,12 +25,18 @@ def export_bspline_to_dxf(bspline_processor, chord_length_mm, logger_func):
 
         logger_func(f"Preparing B-spline DXF export with chord length: {chord_length_mm:.2f} mm...")
 
-        # Get B-spline control points
+        # Get B-spline control points and knot vectors
         upper_ctrl_pts = bspline_processor.upper_control_points
         lower_ctrl_pts = bspline_processor.lower_control_points
+        upper_knots = bspline_processor.upper_knot_vector
+        lower_knots = bspline_processor.lower_knot_vector
         
         if upper_ctrl_pts is None or lower_ctrl_pts is None:
             logger_func("Error: B-spline control points not available for DXF export.")
+            return None
+        
+        if upper_knots is None or lower_knots is None:
+            logger_func("Error: B-spline knot vectors not available for DXF export.")
             return None
         
         # Scale control points by chord length
@@ -46,27 +52,37 @@ def export_bspline_to_dxf(bspline_processor, chord_length_mm, logger_func):
         upper_points = [tuple(pt.tolist()) for pt in upper_ctrl_pts_scaled]
         lower_points = [tuple(pt.tolist()) for pt in lower_ctrl_pts_scaled]
         
-        # Determine degrees
-        upper_degree = len(upper_points) - 1
-        lower_degree = len(lower_points) - 1
+        # Convert knot vectors to lists (ezdxf expects a list)
+        upper_knots_list = upper_knots.tolist()
+        lower_knots_list = lower_knots.tolist()
         
-        logger_func(f"Creating NURBS curves: upper degree {upper_degree}, lower degree {lower_degree}")
+        # Get degree from the processor (set in config)
+        degree = bspline_processor.degree
         
-        # Add upper surface NURBS curve
-        msp.add_open_spline(
+        logger_func(f"Creating NURBS curves: degree {degree} (from config)")
+        logger_func(f"  Upper knot vector: {len(upper_knots_list)} knots")
+        logger_func(f"  Lower knot vector: {len(lower_knots_list)} knots")
+        
+        # Create SPLINE entities directly with control points and knots
+        # Using add_open_spline which accepts control_points, degree, and knots
+        upper_spline = msp.add_open_spline(
             control_points=upper_points,
-            degree=upper_degree,
-            dxfattribs={"layer": "AIRFOIL_UPPER", "color": 1}  # Red
+            degree=degree,
+            knots=upper_knots_list
         )
-        logger_func(f"  Upper surface: degree {upper_degree} B-spline with {len(upper_points)} control points")
+        upper_spline.dxf.layer = "AIRFOIL_UPPER"
+        upper_spline.dxf.color = 1  # Red
+        logger_func(f"  Upper surface: degree {degree} B-spline with {len(upper_points)} control points")
         
         # Add lower surface NURBS curve  
-        msp.add_open_spline(
+        lower_spline = msp.add_open_spline(
             control_points=lower_points,
-            degree=lower_degree,
-            dxfattribs={"layer": "AIRFOIL_LOWER", "color": 5}  # Blue
+            degree=degree,
+            knots=lower_knots_list
         )
-        logger_func(f"  Lower surface: degree {lower_degree} B-spline with {len(lower_points)} control points")
+        lower_spline.dxf.layer = "AIRFOIL_LOWER"
+        lower_spline.dxf.color = 5  # Blue
+        logger_func(f"  Lower surface: degree {degree} B-spline with {len(lower_points)} control points")
         
         # Add trailing edge connector if needed (for blunt trailing edge)
         if not bspline_processor.is_sharp_te:
