@@ -49,6 +49,15 @@ class OptimizerSettingsWidget(QGroupBox):
             "Note: Disabling may improve fit quality for certain input files."
         )
 
+        # Single Span mode
+        self.single_span_checkbox = QCheckBox("Single Span")
+        self.single_span_checkbox.setChecked(False)  # Default to disabled
+        self.single_span_checkbox.setToolTip(
+            "When enabled: Sets B-spline degree to (control points - 1) to produce a single span B-spline.\n"
+            "This ensures compatibility with Fusion 360, which cannot import multi-span B-splines.\n"
+            "The config degree setting is ignored when this mode is active."
+        )
+
         # B-spline settings
         self.bspline_cp_label = QLabel("B-spline control points:")
         self.bspline_cp_spin = QSpinBox()
@@ -86,6 +95,12 @@ class OptimizerSettingsWidget(QGroupBox):
         g2_row.addWidget(self.enforce_te_tangency_checkbox)
         g2_row.addStretch(1)
         layout.addLayout(g2_row)
+
+        # Single Span checkbox row
+        single_span_row = QHBoxLayout()
+        single_span_row.addWidget(self.single_span_checkbox)
+        single_span_row.addStretch(1)
+        layout.addLayout(single_span_row)
 
         self.setLayout(layout)
 

@@ -41,24 +41,43 @@ class BSplineController:
             # Get TE tangency flag from GUI checkbox
             enforce_te_tangency = self.window.optimizer_panel.enforce_te_tangency_checkbox.isChecked()
             
-            print(f"[DEBUG] Controller: enforce_te_tangency checkbox state: {enforce_te_tangency}")
+            # Get Single Span mode flag from GUI checkbox
+            single_span_mode = self.window.optimizer_panel.single_span_checkbox.isChecked()
             
-            success = self.bspline_processor.fit_bspline(
-                self.processor.upper_data,
-                self.processor.lower_data,
-                num_control_points,
-                self.processor.is_trailing_edge_thickened(),
-                self.processor.upper_te_tangent_vector,
-                self.processor.lower_te_tangent_vector,
-                enforce_g2=enforce_g2,
-                enforce_te_tangency=enforce_te_tangency,
-            )
+            print(f"[DEBUG] Controller: enforce_te_tangency checkbox state: {enforce_te_tangency}")
+            print(f"[DEBUG] Controller: Single Span mode: {single_span_mode}")
+            
+            # Handle Single Span mode: set degree to num_control_points - 1 for single span
+            original_degree = self.bspline_processor.degree
+            actual_degree = original_degree  # Will be updated if Single Span mode is enabled
+            if single_span_mode:
+                actual_degree = num_control_points - 1
+                self.bspline_processor.degree = actual_degree
+                print(f"[DEBUG] Single Span mode: Setting degree to {actual_degree} (control points - 1) for single span B-spline")
+            
+            try:
+                success = self.bspline_processor.fit_bspline(
+                    self.processor.upper_data,
+                    self.processor.lower_data,
+                    num_control_points,
+                    self.processor.is_trailing_edge_thickened(),
+                    self.processor.upper_te_tangent_vector,
+                    self.processor.lower_te_tangent_vector,
+                    enforce_g2=enforce_g2,
+                    enforce_te_tangency=enforce_te_tangency,
+                )
+            finally:
+                # Restore original degree if Single Span mode was used
+                if single_span_mode:
+                    self.bspline_processor.degree = original_degree
+                    print(f"[DEBUG] Single Span mode: Restored original degree to {original_degree}")
 
             if success:
                 # Log G2 setting used
                 g2_status = "enabled" if enforce_g2 else "disabled"
                 te_tangency_status = "enabled" if enforce_te_tangency else "disabled"
-                self.window.status_log.append(f"B-spline fitting with G2 continuity {g2_status}, TE tangency {te_tangency_status}")
+                single_span_status = "enabled" if single_span_mode else "disabled"
+                self.window.status_log.append(f"B-spline fitting with G2 continuity {g2_status}, TE tangency {te_tangency_status}, Single Span mode {single_span_status}")
                 
                 # Calculate and display errors for each surface
                 upper_sum_sq, upper_max_err, upper_max_err_idx = self.calculate_bspline_fitting_error(
@@ -78,9 +97,11 @@ class BSplineController:
                 self.bspline_processor.last_lower_max_error = lower_max_err
                 self.bspline_processor.last_lower_max_error_idx = lower_max_err_idx
                 
-                num_spans = num_control_points - self.bspline_processor.degree
+                # Use the degree that was actually used for fitting (may be modified by Single Span mode)
+                num_spans = num_control_points - actual_degree
+                span_info = f"1 span" if single_span_mode else f"{num_spans} spans"
                 self.window.status_log.append(
-                    f"B-spline fit OK (degree {self.bspline_processor.degree}, {num_spans} spans). "
+                    f"B-spline fit OK (degree {actual_degree}, {span_info}). "
                     f"Upper max error: {upper_max_err:.6e}, Lower max error: {lower_max_err:.6e}"
                 )
                 
